@@ -14,6 +14,7 @@
 | M5 偏载判级 | 核查左重、右重和临界偏载 | `GET /api/balance` | `app/modules/m5_balance/thresholds.py` `app/modules/m5_balance/service.py` | `tests/test_balance.py` |
 | M6 整车磅单勾稽 | 审核磅单版次、差额和待复秤原因 | `GET /api/reconcile` | `app/modules/m6_reconcile/tickets.py` `app/modules/m6_reconcile/service.py` | `tests/test_reconcile.py` |
 | M7 称重批次 | 提交样例、重算、追溯并下载复核包 | `POST /api/batches` | `app/modules/m7_batches/service.py` `app/modules/m7_batches/export.py` `app/store.py` | `tests/test_batches.py` |
+| M8 车辆身份核对 | 归并同车车次、核对相近车牌并交接不确定项 | `GET /api/vehicles` | `app/modules/m8_identity/plates.py` `app/modules/m8_identity/fingerprint.py` `app/modules/m8_identity/service.py` | `tests/test_identity.py` |
 
 ## 陷阱登记
 
@@ -36,6 +37,10 @@
 | TRAP-19 | 0019 两个左轮争同一右轮 | 贪心配对凭空造轴 | 双向唯一才配对 | `app/modules/m4_axles/pair.py` | `tests/test_axles.py::test_nearest_pair_would_invent_axle_when_candidates_conflict` |
 | TRAP-23 | 0007 触发恰好在前证书右端 | 一轮发给两版证书 | 生效区间左闭右开 | `app/modules/m2_calibration/service.py` | `tests/test_calibration.py::test_exact_handoff_uses_new_certificate_and_no_double_match` |
 | TRAP-25 | `certificates.csv` 两张右轮证书叠期 | 随机取一张 | 隔离触发并带两张证书行 | `app/modules/m2_calibration/service.py` | `tests/test_calibration.py::test_overlap_isolates_with_both_certificates` |
+| TRAP-26 | 0102 车牌漏字（粤B·0761） | 精确匹配建出重复档案 | 编辑距离 1 候选加轴组指纹佐证归并 | `app/modules/m8_identity/service.py` | `tests/test_identity.py::test_missing_character_plate_merges_with_matching_fingerprint` |
+| TRAP-27 | 0103/0104 车牌换位（88204/88240） | 模糊匹配并错两车 | 轴数不符拒绝归并，履历互不混入 | `app/modules/m8_identity/service.py` | `tests/test_identity.py::test_transposed_lookalike_plates_stay_separate` |
+| TRAP-28 | 0106 磅单晚到超 15 分钟窗 | 勾稽排除后档案丢单 | 晚到磅单归入车辆档案并列明 | `app/modules/m8_identity/service.py` | `tests/test_identity.py::test_exact_plate_passes_merge_and_late_ticket_attaches` |
+| TRAP-29 | 0108 右轮质态异常 | 猜配同车或静默丢弃 | 指纹不可测暂缓归并，交班列待补证 | `app/modules/m8_identity/fingerprint.py` | `tests/test_identity.py::test_incomplete_evidence_defers_suspected_duplicate` |
 
 ## 对账规则
 
@@ -46,3 +51,5 @@
 
 - 输入限定配置目录内样例文件，按文件 1 MiB 和 4,000 条逻辑记录封顶。只支持带显式时区偏移和毫秒精度以内的采样时刻。
 - 轴距用档案内的车次恒速推算。缺轮、歧义或异常轴距产生现场复秤待办，现场结果需在外部系统处置。
+- 车辆归并只发生在同批车次内；跨批车辆靠稳定档案键对齐，不自动并档。档案键取成员最小规范化车牌，晚到记录若带来更小的近似车牌会改变档案键，成员与归并依据不变。
+- 轴组指纹只区分轴数与轴距序列，同型号车队车辆指纹相同，不能单独证明同车；车牌候选之外的车辆永不归并。

@@ -25,10 +25,11 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 18420
 2. 暂停触发日志滚动。点击「重跑」，批次号和计数保持一致。点击「继续滚动」，可见「重算核验一致」事件。
 3. 左右轮载选择 `0007`，检查轴组及 10% 和 20% 的偏载。切到「整车磅单勾稽」，检查实际差额和复秤原因。`0023` 的差额为 0 kg，但仍需复秤。
 4. 「导出复核包」下载归档 ZIP。切换「南门校验 · 对照采样」可查看 28 条全有效、7 车次全核平的对照结果。
+5. 切换「北门夜班 · 重复车次」运行，打开「车辆身份核对」。核对 8 车次归入 6 份档案：漏字车牌 `粤B·0761` 凭轴组指纹并入 `粤B·07612`，换位相近的 `粤B·88204` 与 `粤B·88240` 已排除不并，`0108` 因轮载隔离待补证，`0106` 的晚到磅单归入 `粤S·15982` 档案。
 
 ## 模块入口
 
-`GET /api/intake`、`/api/calibration`、`/api/debounce`、`/api/axles`、`/api/balance`、`/api/reconcile` 均支持 `sample=dirty` 或 `sample=clean`，也可传 `run_id` 读取归档。`POST /api/batches` 接收 `{"sample":"dirty"}`，`GET /api/batches` 列出归档。批次号下的 `/rerun` 和 `/export` 分别用于重算与下载。
+`GET /api/intake`、`/api/calibration`、`/api/debounce`、`/api/axles`、`/api/balance`、`/api/reconcile`、`/api/vehicles` 均支持 `sample=dirty` 或 `sample=clean`，也可传 `run_id` 读取归档。`POST /api/batches` 接收 `{"sample":"dirty"}`，`GET /api/batches` 列出归档。批次号下的 `/rerun` 和 `/export` 分别用于重算与下载。
 
 定义在 [数据字典](docs/DATA-DICTIONARY.md)，模块与样例断言在 [深度登记](docs/DEPTH.md)。样例按文件做有界分析，轴距按车次档案恒速估计。
 

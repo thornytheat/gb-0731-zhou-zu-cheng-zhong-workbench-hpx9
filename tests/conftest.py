@@ -24,6 +24,11 @@ def clean_result():
     return run_pipeline(read_sources(ROOT / "sample_data", "clean"))
 
 
+@pytest.fixture(scope="session")
+def repeat_result():
+    return run_pipeline(read_sources(ROOT / "sample_data", "repeat"))
+
+
 @pytest.fixture
 def settings(tmp_path):
     return Settings(tmp_path / "sources", tmp_path / "weigh.sqlite3")

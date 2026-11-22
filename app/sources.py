@@ -4,7 +4,9 @@ from pathlib import Path
 from app.config import MAX_FILE_BYTES
 from app.errors import DomainError
 
-SAMPLES = {"dirty": "东门晚班 · 原始采样", "clean": "南门校验 · 对照采样"}
+SAMPLES = {"dirty": "东门晚班 · 原始采样", "clean": "南门校验 · 对照采样", "repeat": "北门夜班 · 重复车次"}
+
+SHARED_ROLES = {"certificates", "passes"}
 
 
 @dataclass(frozen=True)
@@ -29,12 +31,14 @@ def read_sources(directory: Path, sample, roles=None):
     for role, name in sample_files(sample).items():
         if roles is not None and role not in roles:
             continue
+        dedicated = directory / f"{sample}-{role}.csv"
+        path = dedicated if role in SHARED_ROLES and dedicated.exists() else directory / name
         try:
-            with (directory / name).open("rb") as handle:
+            with path.open("rb") as handle:
                 content = handle.read(MAX_FILE_BYTES + 1)
         except OSError as exc:
-            raise DomainError("SOURCE_MISSING", 422, file=name) from exc
+            raise DomainError("SOURCE_MISSING", 422, file=path.name) from exc
         if len(content) > MAX_FILE_BYTES:
-            raise DomainError("SOURCE_TOO_LARGE", file=name)
-        result[role] = Source(name, content)
+            raise DomainError("SOURCE_TOO_LARGE", file=path.name)
+        result[role] = Source(path.name, content)
     return result

@@ -37,7 +37,9 @@ def test_full_flow_from_unarchived_preview_to_standalone_export(client, settings
     assert response.headers["Content-Type"] == "application/zip"
     assert response.headers["Content-Disposition"] == f'attachment; filename="axle-{run_id[:12]}.zip"'
     with ZipFile(BytesIO(response.content)) as bundle:
-        assert set(bundle.namelist()) == {"运行清单.json", "触发复核.csv", "整车勾稽.csv", "轴组轮载.csv"}
+        assert set(bundle.namelist()) == {
+            "运行清单.json", "触发复核.csv", "整车勾稽.csv", "轴组轮载.csv", "车辆档案.csv", "车辆核对.csv",
+        }
         assert json.loads(bundle.read("运行清单.json")) == manifest
         votes = read_csv(bundle, "整车勾稽.csv", "车次")
         assert votes["0007"]["差额kg"] == "50.00"

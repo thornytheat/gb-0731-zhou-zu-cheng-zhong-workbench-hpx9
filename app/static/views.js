@@ -24,8 +24,14 @@ export function dateTime(value) {
 const col = (label, read, numeric = false) => ({label, read, numeric});
 const source = (obj) => obj.source.ref;
 const joined = (list) => list?.join(" / ");
-const labels = {pass: "正常", warn: "偏载", severe: "严重", matched: "已核平", review: "待复秤"};
-const styles = {pass: "ok", warn: "warn", severe: "bad", matched: "ok", review: "warn"};
+const labels = {
+  pass: "正常", warn: "偏载", severe: "严重", matched: "已核平", review: "待复秤",
+  merged: "已归并", pending: "待补证", rejected: "已排除",
+};
+const styles = {
+  pass: "ok", warn: "warn", severe: "bad", matched: "ok", review: "warn",
+  merged: "ok", pending: "warn", rejected: "bad",
+};
 const displayStatus = (level) => ({text: labels[level], level: styles[level]});
 
 const issueColumns = [
@@ -90,6 +96,32 @@ export function moduleViews(name, snapshot, history) {
         col("磅单证据", (r) => joined(r.ticket_refs)), col("轮载证据", (r) => joined(r.wheel_refs)),
         col("复秤证据", (r) => joined(r.review_refs)),
       ]], ["磅单隔离", stage?.ticket_issues, issueColumns], ["触发隔离汇总", data?.quarantine, issueColumns],
+    ]};
+    case "vehicles": return {summary: stage ? `${stage.summary.profiles} 档案 · ${stage.summary.merged} 归并 · ${stage.summary.pending} 待补证 · ${stage.summary.rejected} 已排除` : "", views: [
+      ["车辆档案", stage?.profiles, [
+        col("档案键", (r) => r.vehicle_key), col("主车牌", (r) => r.plate),
+        col("成员车次", (r) => r.members.map((m) => m.pass_id).join(" / ")),
+        col("过磅", (r) => r.totals.passes, true), col("车轴", (r) => r.totals.axles, true),
+        col("累计轮载 kg", (r) => r.totals.wheel_kg, true), col("状态", (r) => displayStatus(r.status)),
+        col("车牌版本", (r) => joined(r.plates.map((p) => p.plate))),
+        col("归并依据", (r) => r.evidence.length, true), col("不确定项", (r) => r.uncertainties.length, true),
+      ]],
+      ["归并核对", stage?.pairs, [
+        col("车次对", (r) => `${r.left} ↔ ${r.right}`), col("判定", (r) => displayStatus(r.verdict)),
+        col("依据码", (r) => r.code), col("说明", (r) => r.detail), col("证据行", (r) => joined(r.refs)),
+      ]],
+      ["档案履历", stage?.profiles.flatMap((p) => p.history.map((h) => ({...h, vehicle_key: p.vehicle_key}))), [
+        col("档案键", (r) => r.vehicle_key), col("车次", (r) => r.pass_id),
+        col("入口时刻", (r) => clock(r.entry)), col("轴数", (r) => r.axles, true),
+        col("轮载 kg", (r) => r.wheel_kg, true), col("磅单", (r) => r.ticket),
+        col("版次", (r) => r.revision, true), col("静态总重 kg", (r) => r.ticket_kg, true),
+        col("差额 kg", (r) => r.difference_kg, true), col("状态", (r) => displayStatus(r.status)),
+        col("原因码", (r) => joined(r.codes)), col("证据行", (r) => joined(r.refs)),
+      ]],
+      ["不确定项", stage?.profiles.flatMap((p) => p.uncertainties.map((u) => ({...u, vehicle_key: p.vehicle_key}))), [
+        col("档案键", (r) => r.vehicle_key), col("代码", (r) => r.code), col("说明", (r) => r.message),
+        col("细节", (r) => r.detail), col("证据行", (r) => joined(r.refs)),
+      ]],
     ]};
     case "batches": return {summary: `${history.length} 条归档`, views: [
       ["归档批次", history, [

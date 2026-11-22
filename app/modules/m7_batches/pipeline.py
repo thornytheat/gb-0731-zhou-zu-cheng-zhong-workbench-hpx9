@@ -6,10 +6,11 @@ from app.modules.m3_debounce.service import debounce
 from app.modules.m4_axles.service import reconstruct
 from app.modules.m5_balance.service import balance
 from app.modules.m6_reconcile.service import reconcile
+from app.modules.m8_identity.service import identify_vehicles
 from app.reasons import REASONS
 
 
-def run_pipeline(sources, until="reconcile", events=None):
+def run_pipeline(sources, until="vehicles", events=None):
     results = {}
 
     def log(level, code, message, time=None):
@@ -52,4 +53,11 @@ def run_pipeline(sources, until="reconcile", events=None):
         level = "info" if issue.code in {"REPLAY_ID", "BOUNCE"} else "warn"
         log(level, issue.code, f"{issue.source.ref} · {REASONS[issue.code]}")
     log("ok", "LEDGER", f"触发核平 · {ledger['ledger']['review']} 车次待复秤")
+    if until == "reconcile":
+        return wire(results)
+    vehicles = results["vehicles"] = identify_vehicles(
+        cal["passes"], axles["axes"], ledger["rows"], isolated, sources["tickets"],
+    )
+    brief = vehicles["summary"]
+    log("ok", "VEHICLES", f"{brief['profiles']} 车辆档案 · {brief['merged']} 归并 · {brief['pending']} 待补证")
     return wire(results)

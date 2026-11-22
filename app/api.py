@@ -9,8 +9,8 @@ router = APIRouter(prefix="/api")
 def view(request, stage, sample, run_id):
     if run_id is not None:
         manifest, results = request.app.state.store.read(run_id)
-        return {"run_id": run_id, "sample": manifest["sample"], "data": results[stage]}
-    roles = None if stage == "reconcile" else {"triggers", "certificates", "passes"}
+        return {"run_id": run_id, "sample": manifest["sample"], "data": results.get(stage)}
+    roles = None if stage in {"reconcile", "vehicles"} else {"triggers", "certificates", "passes"}
     if stage == "intake":
         roles = {"triggers"}
     sources = read_sources(request.app.state.settings.source_dir, sample, roles)
@@ -46,6 +46,11 @@ def balance(request: Request, sample: str = "dirty", run_id: str | None = None):
 @router.get("/reconcile", tags=["整车磅单勾稽"])
 def reconcile(request: Request, sample: str = "dirty", run_id: str | None = None):
     return view(request, "reconcile", sample, run_id)
+
+
+@router.get("/vehicles", tags=["车辆身份核对"])
+def vehicles(request: Request, sample: str = "dirty", run_id: str | None = None):
+    return view(request, "vehicles", sample, run_id)
 
 
 @router.get("/workbench", tags=["工作台"])
